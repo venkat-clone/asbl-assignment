@@ -1,0 +1,37 @@
+// schema.prisma
+
+datasource db {
+    provider = "postgresql" // or any other database you're using
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model User {
+    id        Int       @id @default(autoincrement())
+    phone     String    @unique
+    query     String?
+
+    sessions  Session[] // One user can have many sessions
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+}
+
+model Session {
+    id         Int      @id @default(autoincrement())
+    userId     Int? // Foreign key to User
+    user       User?     @relation(fields: [userId], references: [id])
+    endPoint   String?
+    ipAddress  String // The IP address from which the user logged in
+    deviceInfo Json? // Optional meta-data (User-Agent, Device info, etc.)
+    sessionId  String   @unique // Unique session ID (UUID)
+    createdAt  DateTime @default(now()) // When the session was created
+    updatedAt  DateTime @updatedAt // Automatically updated when session is modified
+
+    @@index([userId])  // Index on userId for faster lookups of sessions by user
+    @@index([ipAddress]) // Index on ipAddress for faster lookups of sessions by IP address
+    @@index([createdAt])
+}
+

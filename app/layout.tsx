@@ -1,0 +1,109 @@
+import type React from "react"
+import type { Metadata } from "next"
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import { Analytics } from "@vercel/analytics/next"
+import { Suspense } from "react"
+import Script from "next/script"
+import "./globals.css"
+import { Header } from "@/components/header"
+import { WhatsAppButton } from "@/components/whatsapp-button"
+import { LogoLoader } from "@/components/logo-loader"
+import SessionTracker from "@/components/SessionTracker"
+
+export const metadata: Metadata = {
+  title: "ASBL | Premium Real Estate in Hyderabad",
+  description:
+    "ASBL builds luxury residences in Hyderabad with trust, timely delivery, and robust construction technology.",
+  generator: "v0.app",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#001f3f",
+  icons: { icon: "/placeholder-logo.png", shortcut: "/placeholder-logo.png", apple: "/placeholder-logo.png" },
+  openGraph: {
+    title: "ASBL | Premium Real Estate in Hyderabad",
+    description:
+      "Luxury residences crafted with precision, technology, and transparency. Explore projects across Hyderabad.",
+    url: "https://example.com",
+    siteName: "ASBL",
+    images: [{ url: "/luxury-real-estate-tower-at-sunset.jpg", width: 1200, height: 630, alt: "ASBL Hero" }],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ASBL | Premium Real Estate in Hyderabad",
+    description:
+      "Luxury residences crafted with precision, technology, and transparency. Explore projects across Hyderabad.",
+    images: ["/luxury-real-estate-tower-at-sunset.jpg"],
+  },
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
+  const GA_ID = process.env.NEXT_PUBLIC_GA_ID
+
+  return (
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+      {GTM_ID ? (
+        <>
+          <Script id="gtm" strategy="afterInteractive">
+            {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');`}
+          </Script>
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            />
+          </noscript>
+        </>
+      ) : null}
+
+      {GA_ID ? (
+        <>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+          <Script id="ga4" strategy="afterInteractive">
+            {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`}
+          </Script>
+        </>
+      ) : null}
+
+      <Script id="ld-org" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "ASBL",
+          url: "https://example.com",
+          logo: "https://example.com/placeholder-logo.png",
+          sameAs: [],
+          address: {
+            "@type": "PostalAddress",
+            addressCountry: "IN",
+            addressRegion: "Telangana",
+            addressLocality: "Hyderabad",
+          },
+        })}
+      </Script>
+
+      <body className="font-sans bg-background text-foreground">
+        <Header />
+        <Suspense fallback={<LogoLoader />}>{children}</Suspense>
+        <WhatsAppButton />
+        <Analytics />
+        <SessionTracker />
+      </body>
+    </html>
+  )
+}
