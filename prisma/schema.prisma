@@ -13,28 +13,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
+// User model - created after form submission
 model User {
-    id        Int       @id @default(autoincrement())
-    phone     String    @unique
-    query     String?
+  id           String   @id @default(cuid())
+  mobileNumber String   @unique
+  email        String?
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    sessions  Session[] 
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+  // Relations
+  sessions        Session[]
+  events          Event[]
+  devices         DeviceUserMapping[]
+  formSubmissions FormSubmission[]
+
+  @@index([mobileNumber])
+  @@map("users")
 }
 
+// Device model - tracks physical devices
+model Device {
+  id               String   @id @default(cuid())
+  fingerprint      String   @unique // Browser fingerprint
+  userAgent        String?
+  browser          String?
+  os               String?
+  deviceType       String? // mobile, tablet, desktop
+  screenResolution String?
+  timezone         String?
+  language         String?
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  sessions Session[]
+  events   Event[]
+  users    DeviceUserMapping[]
+
+  @@index([fingerprint])
+  @@map("devices")
+}
+
+// Session model - tracks browsing sessions
 model Session {
-    id         Int      @id @default(autoincrement())
-    userId     Int?
-    user       User?     @relation(fields: [userId], references: [id])
-    endPoint   String?
-    ipAddress  String
-    deviceInfo Json? 
-    sessionId  String   @unique 
-    createdAt  DateTime @default(now()) 
-    updatedAt  DateTime @updatedAt 
-    @@index([userId])  
-    @@index([ipAddress]) 
-    @@index([createdAt])
+  id              String    @id @default(cuid())
+  deviceId        String
+  userId          String? // Null for anonymous sessions
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  isAuthenticated Boolean   @default(false)
+  endReason       String? // logout, timeout, new_user_login
+  referrer        String?   @db.Text
+  landingPage     String?   @db.Text
+  lastActivityAt  DateTime  @default(now())
+
+  // Relations
+  device    Device     @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  events    Event[]
+  pageViews PageView[]
+
+  @@index([deviceId])
+  @@index([userId])
+  @@index([startTime])
+  @@index([isAuthenticated])
+  @@map("sessions")
+}
+
+// Device-User mapping for multi-device tracking
+model DeviceUserMapping {
+  id           String   @id @default(cuid())
+  deviceId     String
+  userId       String
+  firstLoginAt DateTime @default(now())
+  lastLoginAt  DateTime @default(now())
+  loginCount   Int      @default(1)
+  isActive     Boolean  @default(true)
+
+  // Relations
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, userId])
+  @@index([deviceId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("device_user_mappings")
+}
+
+// Event model - tracks all user interactions
+model Event {
+  id        String   @id @default(cuid())
+  sessionId String
+  deviceId  String
+  userId    String? // Null for anonymous events
+  eventType String // page_view, click, scroll, form_interaction, etc.
+  eventName String?
+  pageUrl   String   @db.Text
+  pagePath  String?
+  pageTitle String?
+  referrer  String?  @db.Text
+  eventData Json? // Flexible JSON for custom event properties
+  timestamp DateTime @default(now())
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([deviceId])
+  @@index([userId])
+  @@index([eventType])
+  @@index([timestamp])
+  @@map("events")
+}
+
+// PageView model - specific tracking for page views
+model PageView {
+  id           String   @id @default(cuid())
+  sessionId    String
+  pageUrl      String   @db.Text
+  pagePath     String
+  pageTitle    String?
+  referrer     String?  @db.Text
+  viewDuration Int? // in seconds
+  scrollDepth  Int? // percentage
+  timestamp    DateTime @default(now())
+  isRefresh    Boolean  @default(false)
+
+  // Relations
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([pagePath])
+  @@index([timestamp])
+  @@map("page_views")
+}
+
+// FormSubmission model - tracks form completions
+model FormSubmission {
+  id          String   @id @default(cuid())
+  userId      String
+  formType    String // contact, registration, etc.
+  formData    Json // Store form fields
+  submittedAt DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([formType])
+  @@index([submittedAt])
+  @@map("form_submissions")
 }

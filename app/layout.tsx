@@ -10,6 +10,8 @@ import { Header } from "@/components/header"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { LogoLoader } from "@/components/logo-loader"
 import SessionTracker from "@/components/SessionTracker"
+import { CAnalytics } from '@/components/Analytics';
+
 
 export const metadata: Metadata = {
   title: "ASBL | Premium Real Estate in Hyderabad",
@@ -102,6 +104,7 @@ gtag('config', '${GA_ID}');`}
         <Suspense fallback={<LogoLoader />}>{children}</Suspense>
         <WhatsAppButton />
         <Analytics />
+        <CAnalytics />
         <SessionTracker />
       </body>
     </html>
